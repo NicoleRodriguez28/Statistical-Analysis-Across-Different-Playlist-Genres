@@ -1,0 +1,194 @@
+---
+title: "Statistical Analysis Across Different Playlist Genres"
+author: "Nicole Rodriguez"
+date: "04/07/2025"
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    code_download: true
+    fig_caption: true
+    df_print: kable
+    theme: lumen
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+# Introduction
+This analysis explores the genre of songs by Queen and Selena Gomez utilizing a Spotify dataset from GitHub. Queen, known for blending rock and pop, will be compared to Selena Gomez, a pop icon with influences in dance and Latin music. By examining the genre distribution of both artists, we'll uncover how their musical styles differ and evolve, offering insights into their unique sounds and artistic trajectories. 
+
+* * *
+
+
+# Data 
+## Load Libraries & Packages
+```{r, warning = FALSE, message = FALSE}
+# Load required packages
+if (!require("mosaic"))
+  install.packages("mosaic")
+if (!require("dplyr"))
+  install.packages("dplyr")
+if (!require("ggplot2"))
+  install.packages("ggplot2")
+if (!require("tidyverse"))
+  install.packages("tidyverse")
+if (!require("readr"))
+  install.packages("readr")
+
+library(mosaic) # Stats analysis
+library(dplyr) # Data manipulation
+library(ggplot2) # Data Visualization
+library(tidyverse) # Data packages
+library(readr) # Read data
+```
+
+## Data Description 
+This analysis will use the [spotify_songs.csv](https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv) data set which includes a total of 32,833 observations and 23 variables. 
+
+## Load & Preview Data
+```{r, warning = FALSE, message = FALSE}
+# Load dataset into R
+spotify_songs <- read_csv("spotify_songs.csv")
+
+# View data 
+dim(spotify_songs) # Dimensions
+colnames(spotify_songs) # All variables
+head(spotify_songs) # Preview data
+
+```
+
+## Variables
+From the 23 variables, the following will be utilized for this analysis:
+
+- acousticness
+- danceability
+- duration_ms
+- energy
+- liveness
+- loudness
+- speechiness
+- tempo
+- valence
+
+* * *
+
+# Data Analysis
+
+## Descriptive Statistics
+By using `favstats()`, several *descriptive statistics* for `speechiness` separated by `playlist_genre`, can be viewed. 
+
+```{r}
+# Get descriptive stats for speechiness by playlist_genre
+stats <- favstats(speechiness ~ playlist_genre, data = spotify_songs)
+
+# Descriptive stats results
+print(stats)
+```
+
+In summary, speechiness differs across genres, with rap having the most spoken word elements and rock the least. Latin, R&B, and pop have moderate speechiness, with some songs featuring more spoken or rap-like portions. This variation highlights how different genres incorporate spoken content in varying degrees, influencing their overall sound and style. 
+
+### Highest Average Speechiness
+```{r}
+# Average speechiness by playlist_genre
+av_speech <- tapply(spotify_songs$speechiness, spotify_songs$playlist_genre, mean, na.rm = TRUE)
+print(av_speech)
+
+# Find genre with highest average speechiness
+highest_speechiness <- names(av_speech)[which.max(av_speech)]
+highest_speechiness_value <- max(av_speech)
+
+# Display highest average level of speechiness results
+highest_av_speech <- data.frame(playlist_genre = highest_speechiness, 
+                                highest_average_speechiness = highest_speechiness_value)
+print(highest_av_speech)
+```
+
+> The genre that has the *highest average* level of `speechiness` is **`r paste(highest_speechiness)`**. 
+
+**Rap** had an average level of 'speechiness' of `r paste(round(highest_speechiness_value, 2))`.
+
+
+### Lowest Average Speechiness
+```{r}
+# Find genre with lowest average speechiness
+lowest_speechiness <- names(av_speech)[which.min(av_speech)]
+lowest_speechiness_value <- min(av_speech)
+
+# Display lowest average level of speechiness results
+lowest_av_speech <- data.frame(playlist_genre = lowest_speechiness, 
+                               lowest_average_speechiness = lowest_speechiness_value)
+print(lowest_av_speech)
+```
+
+> The genre that has the *lowest average* level of `speechiness` is **`r paste(lowest_speechiness)`**.
+
+**Rock** had an average level of 'speechiness' of `r paste(round(lowest_speechiness_value, 2))`.
+
+### Queen & Selena Gomez
+The dataset was filtered to only observe songs by Queen and Selena Gomez. 
+
+```{r}
+# Filter dataset for Queen & Selena Gomez
+QueenVsSelenaGomez_songs <- spotify_songs %>%
+  filter(track_artist %in% c("Queen", "Selena Gomez"))
+
+# Preview filtered dataset
+head(QueenVsSelenaGomez_songs)
+```
+
+## R Analysis
+```{r}
+# Variables to be compared
+compare_spotify_songs <- QueenVsSelenaGomez_songs %>%
+  select(track_artist, danceability, energy, loudness, speechiness, 
+         acousticness, liveness, valence, tempo, duration_ms)
+
+# Reshaping the data from wide to long format for plotting
+long_spotify_songs <- compare_spotify_songs %>%
+  pivot_longer(cols = danceability:duration_ms, names_to = "variable", values_to = "value")
+
+# Boxplot to compare each variable between Queen and Selena Gomez together
+ggplot(long_spotify_songs, aes(x = track_artist, y = value, fill = track_artist)) +
+  # Boxplot
+  geom_boxplot() +
+  # Facet wrap
+  facet_wrap(~variable, scales = "free") +
+  # Adding specific color to plot
+  scale_fill_manual(values = c("Queen" = "#CCCCFF", 
+                                "Selena Gomez" = "#9ACEEB")) +
+  # Labels 
+  labs(title = "A Comparative Analysis of Musical Attributes 
+       Between Queen & Selena Gomez",
+       x = "Artist", y = "Value", fill = "Artist") +
+  theme_minimal()
+```
+
+Based on the box plot observations, we can summarize the following:
+
+- Selena Gomez’s songs generally have lower acoustics, higher danceability, and more speechiness compared to Queen’s, aligning with typical pop characteristics.
+
+- Queen’s songs have a wider range in duration, higher liveness (live performance elements), and are louder on average.
+
+- Selena’s songs tend to have slightly higher energy and a more upbeat feel, while Queen’s tracks have a slightly lower tempo.
+
+- Both artists show similar valence ranges, but Selena's songs have a higher median, suggesting a more positive or upbeat emotional tone.
+
+
+* * * 
+
+# Canva Presentation 
+
+<div style="position: relative; width: 100%; height: 0; padding-top: 56.2500%;
+ padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 1.6em; margin-bottom: 0.9em; overflow: hidden;
+ border-radius: 8px; will-change: transform;">
+  <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
+    src="https://www.canva.com/design/DAGj_Ox6scc/RfrKYaMfeKYuTkmiLGRgGw/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen" data-external="1">
+  </iframe>
+</div>
+<a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAGj_Ox6scc&#x2F;RfrKYaMfeKYuTkmiLGRgGw&#x2F;view?utm_content=DAGj_Ox6scc&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Statistical Analysis Across Different Playlist Genres</a> by Nicole Rodriguez
+
+
+[Canva Presentation Link](https://www.canva.com/design/DAGj_Ox6scc/RfrKYaMfeKYuTkmiLGRgGw/view?utm_content=DAGj_Ox6scc&utm_campaign=designshare&utm_medium=embeds&utm_source=link)
+
+
